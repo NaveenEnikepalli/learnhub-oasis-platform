@@ -1,14 +1,33 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
-import { User, Session } from '@supabase/supabase-js';
 import { toast } from '@/hooks/use-toast';
 
-const supabaseUrl = 'https://your-project.supabase.co';
-const supabaseKey = 'your-anon-key';
+// Mock types to replace Supabase types
+interface User {
+  id: string;
+  email: string;
+  user_metadata: {
+    role: string;
+    first_name: string;
+    last_name: string;
+    full_name: string;
+    created_at: string;
+  };
+  app_metadata: {};
+  aud: string;
+  created_at: string;
+  updated_at: string;
+  role: string;
+}
 
-// For demo purposes, we'll use localStorage to simulate authentication
-// In a real app, you would use actual Supabase credentials
+interface Session {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+  expires_at: number;
+  token_type: string;
+  user: User;
+}
 
 interface AuthContextType {
   user: User | null;

@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Courses from "./pages/Courses";
+import Profile from "./pages/Profile";
 import StudentDashboard from "./pages/StudentDashboard";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -27,6 +28,13 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/courses" element={<Courses />} />
+            
+            {/* Profile Route */}
+            <Route path="/profile" element={
+              <ProtectedRoute allowedRoles={['student', 'teacher', 'admin']}>
+                <Profile />
+              </ProtectedRoute>
+            } />
             
             {/* Protected Dashboard Routes */}
             <Route path="/dashboard/student" element={

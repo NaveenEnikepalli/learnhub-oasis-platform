@@ -1,19 +1,15 @@
 
 export interface User {
-  id: string;
+  _id: string;
   email: string;
-  user_metadata: {
-    role: string;
-    first_name: string;
-    last_name: string;
-    full_name: string;
-    created_at: string;
-  };
-  app_metadata: {};
-  aud: string;
-  created_at: string;
-  updated_at: string;
-  role: string;
+  firstName: string;
+  lastName: string;
+  role: 'student' | 'teacher' | 'admin';
+  profileImage?: string;
+  bio?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Session {

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,7 +31,7 @@ const Courses = () => {
   const fetchCourses = async () => {
     try {
       setLoading(true);
-      const params = {};
+      const params: Record<string, string> = {};
       
       if (searchTerm) params.search = searchTerm;
       if (selectedCategory && selectedCategory !== 'All') params.category = selectedCategory;

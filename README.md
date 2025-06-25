@@ -1,73 +1,190 @@
-# Welcome to your Lovable project
 
-## Project info
+# 🎓 LearnHub - Complete MERN Stack Learning Management System
 
-**URL**: https://lovable.dev/projects/a98e0c18-20e1-43ef-b774-7b84150b1783
+A full-featured Learning Management System built with the MERN stack (MongoDB, Express.js, React.js, Node.js) featuring role-based authentication, course management, and real-time progress tracking.
 
-## How can I edit this code?
+## 🚀 Quick Start
 
-There are several ways of editing your application.
+### Prerequisites
+- Node.js (v18 or higher)
+- npm package manager
 
-**Use Lovable**
+### Installation & Setup
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/a98e0c18-20e1-43ef-b774-7b84150b1783) and start prompting.
+1. **Clone and setup the project**
+   ```bash
+   # Run the setup script to install all dependencies
+   node setup.js
+   ```
 
-Changes made via Lovable will be committed automatically to this repo.
+2. **Start the application**
+   ```bash
+   # Start both backend and frontend simultaneously
+   node start.js
+   ```
 
-**Use your preferred IDE**
+   **Or start services separately:**
+   ```bash
+   # Terminal 1 - Backend
+   cd backend
+   npm run dev
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+   # Terminal 2 - Frontend  
+   npm run dev
+   ```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+3. **Access the application**
+   - Frontend: http://localhost:5173
+   - Backend API: http://localhost:5000
 
-Follow these steps:
+## 🛠️ Tech Stack
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Frontend
+- **React.js 18** with TypeScript
+- **Vite** for fast development and building
+- **Tailwind CSS** for styling
+- **shadcn/ui** for component library
+- **React Router** for navigation
+- **React Query** for state management and API calls
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Backend
+- **Node.js** with Express.js framework
+- **MongoDB** with Mongoose ODM
+- **JWT** for authentication
+- **bcryptjs** for password hashing
+- **Multer** for file uploads
+- **express-validator** for input validation
 
-# Step 3: Install the necessary dependencies.
-npm i
+## 🔐 Default Configuration
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+The application comes pre-configured with:
+
+- **MongoDB URI**: Connected to Atlas cluster
+- **JWT Secret**: Development secret (change for production)
+- **File Uploads**: Local storage in `backend/uploads/`
+- **CORS**: Enabled for localhost:5173
+
+## 👥 User Roles & Features
+
+### 🎓 Student
+- Browse and search courses
+- Enroll in published courses
+- Track learning progress
+- View profile with enrollment history
+
+### 👨‍🏫 Teacher
+- Create and manage courses
+- Upload course materials (videos, PDFs, assignments)
+- Publish/unpublish courses
+- View student enrollments and progress
+
+### 🛡️ Admin
+- Full access to all features
+- User management
+- Course moderation
+- Platform analytics
+
+## 🏗️ Project Structure
+
+```
+learnhub/
+├── backend/                    # Node.js/Express backend
+│   ├── models/                # Mongoose models
+│   ├── routes/               # API routes
+│   ├── middleware/          # Custom middleware
+│   ├── uploads/            # File upload directory
+│   └── server.js          # Main server file
+├── src/                     # React frontend
+│   ├── components/         # Reusable components
+│   ├── pages/             # Page components
+│   ├── hooks/             # Custom React hooks
+│   ├── services/          # API service functions
+│   └── contexts/          # React contexts
+├── start.js               # Development startup script
+├── setup.js              # Project setup script
+└── README.md             # This file
 ```
 
-**Edit a file directly in GitHub**
+## 🔧 Development
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### API Endpoints
 
-**Use GitHub Codespaces**
+**Authentication**
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+- `GET /api/auth/me` - Get current user
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+**Courses**
+- `GET /api/courses` - Get all courses (with search/filters)
+- `POST /api/courses` - Create new course (teachers only)
+- `GET /api/courses/:id` - Get course details
+- `PUT /api/courses/:id` - Update course
+- `DELETE /api/courses/:id` - Delete course
 
-## What technologies are used for this project?
+**Users & Profiles**
+- `GET /api/users/profile` - Get user profile with role-specific data
+- `PUT /api/users/profile` - Update user profile
 
-This project is built with:
+### Database Models
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- **User**: Authentication, profile, and role management
+- **Course**: Course content, metadata, and materials
+- **Enrollment**: Student-course relationships and progress tracking
 
-## How can I deploy this project?
+## 🚀 Production Deployment
 
-Simply open [Lovable](https://lovable.dev/projects/a98e0c18-20e1-43ef-b774-7b84150b1783) and click on Share -> Publish.
+### Backend Deployment
+1. Set environment variables:
+   ```env
+   MONGODB_URI=your_production_mongodb_uri
+   JWT_SECRET=your_secure_jwt_secret
+   NODE_ENV=production
+   PORT=5000
+   ```
 
-## Can I connect a custom domain to my Lovable project?
+2. Build and deploy to your hosting platform
 
-Yes, you can!
+### Frontend Deployment
+1. Update API base URL in `src/services/authService.ts`
+2. Build: `npm run build`
+3. Deploy the `dist` folder
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 🆘 Troubleshooting
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+### Common Issues
+
+1. **Port already in use**
+   ```bash
+   # Kill processes on ports 5000 and 5173
+   npx kill-port 5000
+   npx kill-port 5173
+   ```
+
+2. **MongoDB connection issues**
+   - Check your internet connection
+   - Verify MongoDB Atlas cluster is running
+   - Ensure IP address is whitelisted in Atlas
+
+3. **File upload issues**
+   - Ensure `backend/uploads/` directory exists
+   - Check file permissions
+   - Verify file size limits
+
+### Development Tips
+
+- Check browser console for frontend errors
+- Monitor backend console for API errors
+- Use MongoDB Compass to inspect database
+- Test API endpoints with Postman/Insomnia
+
+## 📝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+---
+
+**Built with ❤️ using the MERN Stack**

@@ -13,14 +13,29 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log('ProtectedRoute: user:', user, 'isLoading:', isLoading);
+    
     if (!isLoading && !user) {
+      console.log('ProtectedRoute: No user, redirecting to /auth');
       navigate('/auth');
       return;
     }
 
     if (!isLoading && user) {
       const userRole = user.role;
+      console.log('ProtectedRoute: User role:', userRole, 'Allowed roles:', allowedRoles);
+      
+      // Validate that userRole is one of the valid roles
+      const validRoles = ['student', 'teacher', 'admin'];
+      if (!validRoles.includes(userRole)) {
+        console.error('ProtectedRoute: Invalid user role:', userRole);
+        // Default to student if role is invalid
+        navigate('/dashboard/student');
+        return;
+      }
+      
       if (!allowedRoles.includes(userRole)) {
+        console.log('ProtectedRoute: Role not allowed, redirecting to user dashboard');
         // Redirect to appropriate dashboard based on user role
         navigate(`/dashboard/${userRole}`);
         return;
@@ -41,7 +56,9 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   }
 
   const userRole = user.role;
-  if (!allowedRoles.includes(userRole)) {
+  const validRoles = ['student', 'teacher', 'admin'];
+  
+  if (!validRoles.includes(userRole) || !allowedRoles.includes(userRole)) {
     return null;
   }
 

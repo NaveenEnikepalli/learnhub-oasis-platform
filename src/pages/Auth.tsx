@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,9 +33,12 @@ const Auth = () => {
   });
 
   useEffect(() => {
-    if (user) {
-      const role = user.role || 'student';
-      navigate(`/dashboard/${role}`);
+    if (user && user.role) {
+      // Ensure we're redirecting to a valid role-based dashboard
+      const validRoles = ['student', 'teacher', 'admin'];
+      const userRole = validRoles.includes(user.role) ? user.role : 'student';
+      console.log('Auth: Redirecting user with role:', userRole);
+      navigate(`/dashboard/${userRole}`);
     }
   }, [user, navigate]);
 

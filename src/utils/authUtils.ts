@@ -1,18 +1,24 @@
 
 import { User, Session } from '@/types/auth';
 
-export const createMockUser = (email: string, role: string, firstName: string, lastName: string): User => ({
-  _id: `user_${Date.now()}`,
-  email,
-  firstName,
-  lastName,
-  role: role as 'student' | 'teacher' | 'admin',
-  profileImage: '',
-  bio: '',
-  isActive: true,
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-});
+export const createMockUser = (email: string, role: string, firstName: string, lastName: string): User => {
+  // Ensure role is one of the valid values
+  const validRoles = ['student', 'teacher', 'admin'];
+  const validRole = validRoles.includes(role) ? role as 'student' | 'teacher' | 'admin' : 'student';
+  
+  return {
+    _id: `user_${Date.now()}`,
+    email,
+    firstName,
+    lastName,
+    role: validRole,
+    profileImage: '',
+    bio: '',
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+};
 
 export const createMockSession = (user: User): Session => ({
   access_token: `token_${Date.now()}`,

@@ -27,8 +27,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     navigate('/');
   };
 
-  const userInitials = user?.user_metadata?.first_name && user?.user_metadata?.last_name
-    ? `${user.user_metadata.first_name[0]}${user.user_metadata.last_name[0]}`
+  const userInitials = user?.firstName && user?.lastName
+    ? `${user.firstName[0]}${user.lastName[0]}`
     : 'U';
 
   return (
@@ -62,7 +62,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">
-                        {user?.user_metadata?.full_name || 'User'}
+                        {user ? `${user.firstName} ${user.lastName}` : 'User'}
                       </p>
                       <p className="text-xs leading-none text-muted-foreground">
                         {user?.email}

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,7 +33,7 @@ const Auth = () => {
 
   useEffect(() => {
     if (user) {
-      const role = user.user_metadata?.role || 'student';
+      const role = user.role || 'student';
       navigate(`/dashboard/${role}`);
     }
   }, [user, navigate]);

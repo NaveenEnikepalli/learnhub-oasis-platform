@@ -81,10 +81,7 @@ export const signOutUser = async (): Promise<void> => {
 export const updateUserProfile = async (user: User, data: any): Promise<User> => {
   const updatedUser = {
     ...user,
-    user_metadata: {
-      ...user.user_metadata,
-      ...data,
-    },
+    ...data,
   };
   
   const storedSession = localStorage.getItem('learnhub_session');

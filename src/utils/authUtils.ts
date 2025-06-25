@@ -2,20 +2,16 @@
 import { User, Session } from '@/types/auth';
 
 export const createMockUser = (email: string, role: string, firstName: string, lastName: string): User => ({
-  id: `user_${Date.now()}`,
+  _id: `user_${Date.now()}`,
   email,
-  user_metadata: {
-    role,
-    first_name: firstName,
-    last_name: lastName,
-    full_name: `${firstName} ${lastName}`,
-    created_at: new Date().toISOString(),
-  },
-  app_metadata: {},
-  aud: 'authenticated',
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-  role: 'authenticated',
+  firstName,
+  lastName,
+  role: role as 'student' | 'teacher' | 'admin',
+  profileImage: '',
+  bio: '',
+  isActive: true,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
 });
 
 export const createMockSession = (user: User): Session => ({

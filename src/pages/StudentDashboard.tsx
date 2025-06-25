@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -75,7 +74,7 @@ const StudentDashboard = () => {
         {/* Welcome Section */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-8 text-white">
           <h1 className="text-3xl font-bold mb-2">
-            Welcome back, {user?.user_metadata?.first_name}!
+            Welcome back, {user?.firstName}!
           </h1>
           <p className="text-blue-100 mb-4">
             Continue your learning journey and achieve your goals

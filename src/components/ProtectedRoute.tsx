@@ -19,7 +19,7 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
     }
 
     if (!isLoading && user) {
-      const userRole = user.user_metadata?.role;
+      const userRole = user.role;
       if (!allowedRoles.includes(userRole)) {
         // Redirect to appropriate dashboard based on user role
         navigate(`/dashboard/${userRole}`);
@@ -40,7 +40,7 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
     return null;
   }
 
-  const userRole = user.user_metadata?.role;
+  const userRole = user.role;
   if (!allowedRoles.includes(userRole)) {
     return null;
   }

@@ -81,7 +81,7 @@ const Index = () => {
 
   const handleGetStarted = () => {
     if (user) {
-      const role = user.user_metadata?.role || 'student';
+      const role = user.role || 'student';
       navigate(`/dashboard/${role}`);
     } else {
       navigate('/auth');
@@ -115,7 +115,7 @@ const Index = () => {
             <div className="flex items-center space-x-4">
               {user ? (
                 <Button 
-                  onClick={() => navigate(`/dashboard/${user.user_metadata?.role || 'student'}`)}
+                  onClick={() => navigate(`/dashboard/${user.role || 'student'}`)}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
                   Dashboard

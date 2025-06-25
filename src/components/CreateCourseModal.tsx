@@ -7,13 +7,15 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
+import { courseAPI } from '@/services/api';
 
 interface CreateCourseModalProps {
   open: boolean;
   onClose: () => void;
+  onCourseCreated?: () => void;
 }
 
-const CreateCourseModal = ({ open, onClose }: CreateCourseModalProps) => {
+const CreateCourseModal = ({ open, onClose, onCourseCreated }: CreateCourseModalProps) => {
   const [courseData, setCourseData] = useState({
     title: '',
     description: '',
@@ -23,28 +25,49 @@ const CreateCourseModal = ({ open, onClose }: CreateCourseModalProps) => {
     duration: '',
     language: 'English',
   });
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Simulate course creation
-    toast({
-      title: "Course Created!",
-      description: "Your course has been created successfully.",
-    });
-    
-    // Reset form
-    setCourseData({
-      title: '',
-      description: '',
-      category: '',
-      level: '',
-      price: '',
-      duration: '',
-      language: 'English',
-    });
-    
-    onClose();
+    try {
+      setLoading(true);
+      
+      const formData = new FormData();
+      Object.entries(courseData).forEach(([key, value]) => {
+        formData.append(key, value);
+      });
+
+      const response = await courseAPI.createCourse(formData);
+      
+      toast({
+        title: "Success!",
+        description: "Course created successfully.",
+      });
+      
+      // Reset form
+      setCourseData({
+        title: '',
+        description: '',
+        category: '',
+        level: '',
+        price: '',
+        duration: '',
+        language: 'English',
+      });
+      
+      onCourseCreated?.();
+      onClose();
+    } catch (error) {
+      console.error('Create course error:', error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to create course",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const categories = [
@@ -99,6 +122,7 @@ const CreateCourseModal = ({ open, onClose }: CreateCourseModalProps) => {
               <Select
                 value={courseData.category}
                 onValueChange={(value) => setCourseData({ ...courseData, category: value })}
+                required
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
@@ -118,6 +142,7 @@ const CreateCourseModal = ({ open, onClose }: CreateCourseModalProps) => {
               <Select
                 value={courseData.level}
                 onValueChange={(value) => setCourseData({ ...courseData, level: value })}
+                required
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select level" />
@@ -139,6 +164,8 @@ const CreateCourseModal = ({ open, onClose }: CreateCourseModalProps) => {
               <Input
                 id="price"
                 type="number"
+                step="0.01"
+                min="0"
                 placeholder="99.99"
                 value={courseData.price}
                 onChange={(e) => setCourseData({ ...courseData, price: e.target.value })}
@@ -151,6 +178,7 @@ const CreateCourseModal = ({ open, onClose }: CreateCourseModalProps) => {
               <Input
                 id="duration"
                 type="number"
+                min="1"
                 placeholder="40"
                 value={courseData.duration}
                 onChange={(e) => setCourseData({ ...courseData, duration: e.target.value })}
@@ -180,11 +208,11 @@ const CreateCourseModal = ({ open, onClose }: CreateCourseModalProps) => {
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
               Cancel
             </Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-              Create Course
+            <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={loading}>
+              {loading ? 'Creating...' : 'Create Course'}
             </Button>
           </div>
         </form>

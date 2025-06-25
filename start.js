@@ -1,55 +1,49 @@
 
 const { spawn } = require('child_process');
 const path = require('path');
+const fs = require('fs');
 
-console.log('🚀 Starting LearnHub Development Environment...\n');
+console.log('🚀 Starting LearnHub Application...\n');
 
-// Start backend
-console.log('📡 Starting backend server...');
-const backend = spawn('npm', ['run', 'dev'], {
+// Check if backend directory exists
+if (!fs.existsSync('backend')) {
+  console.error('❌ Backend directory not found. Please run setup.js first.');
+  process.exit(1);
+}
+
+// Start backend server
+console.log('📦 Starting backend server...');
+const backend = spawn('npm', ['start'], {
   cwd: path.join(__dirname, 'backend'),
-  stdio: 'pipe',
+  stdio: 'inherit',
   shell: true
 });
 
-// Start frontend after a short delay
-setTimeout(() => {
-  console.log('🌐 Starting frontend development server...');
-  const frontend = spawn('npm', ['run', 'dev'], {
-    stdio: 'pipe',
-    shell: true
-  });
-
-  frontend.stdout.on('data', (data) => {
-    console.log(`[Frontend] ${data.toString().trim()}`);
-  });
-
-  frontend.stderr.on('data', (data) => {
-    console.log(`[Frontend Error] ${data.toString().trim()}`);
-  });
-
-  frontend.on('close', (code) => {
-    console.log(`Frontend process exited with code ${code}`);
-    backend.kill();
-  });
-}, 2000);
-
-backend.stdout.on('data', (data) => {
-  console.log(`[Backend] ${data.toString().trim()}`);
-});
-
-backend.stderr.on('data', (data) => {
-  console.log(`[Backend Error] ${data.toString().trim()}`);
-});
-
-backend.on('close', (code) => {
-  console.log(`Backend process exited with code ${code}`);
-  process.exit(code);
+// Start frontend dev server
+console.log('🌐 Starting frontend dev server...');
+const frontend = spawn('npm', ['run', 'dev'], {
+  stdio: 'inherit',
+  shell: true
 });
 
 // Handle process termination
 process.on('SIGINT', () => {
-  console.log('\n🛑 Shutting down development environment...');
+  console.log('\n🛑 Shutting down servers...');
   backend.kill();
+  frontend.kill();
   process.exit(0);
 });
+
+backend.on('error', (err) => {
+  console.error('❌ Backend error:', err);
+});
+
+frontend.on('error', (err) => {
+  console.error('❌ Frontend error:', err);
+});
+
+console.log('\n✅ Both servers starting...');
+console.log('📖 Backend API: http://localhost:5000');
+console.log('🌐 Frontend: http://localhost:5173');
+console.log('\n📝 Check the terminal output above for any errors.');
+console.log('🔄 Use Ctrl+C to stop both servers.\n');

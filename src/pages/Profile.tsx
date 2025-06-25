@@ -4,81 +4,102 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Mail, GraduationCap, BookOpen, Edit, Trash2, Eye, Award } from 'lucide-react';
+import { User, Mail, GraduationCap, BookOpen, Edit, Trash2, Eye, Award, Plus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from '@/hooks/use-toast';
 import DashboardLayout from '@/components/DashboardLayout';
+import CreateCourseModal from '@/components/CreateCourseModal';
+import { courseAPI, enrollmentAPI } from '@/services/api';
 
 const Profile = () => {
   const { user } = useAuth();
-  
-  // Mock data for now - will be replaced with real API calls
-  const enrolledCourses = [
-    {
-      id: 1,
-      title: "Complete Web Development Bootcamp",
-      instructor: "John Smith",
-      progress: 65,
-      status: "In Progress",
-      enrolledDate: "2024-01-15",
-      completionDate: null
-    },
-    {
-      id: 2,
-      title: "Data Science with Python", 
-      instructor: "Sarah Johnson",
-      progress: 100,
-      status: "Completed",
-      enrolledDate: "2023-12-01",
-      completionDate: "2024-01-20"
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [createdCourses, setCreatedCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  const userRole = user?.role || 'student';
+
+  useEffect(() => {
+    fetchUserData();
+  }, [user]);
+
+  const fetchUserData = async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      
+      if (userRole === 'student') {
+        const response = await enrollmentAPI.getMyEnrollments();
+        setEnrolledCourses(response.data);
+      } else if (userRole === 'teacher') {
+        const response = await courseAPI.getMyCourses();
+        setCreatedCourses(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load profile data",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
-  const createdCourses = [
-    {
-      id: 1,
-      title: "Complete Web Development Bootcamp",
-      students: 1542,
-      revenue: 15420,
-      status: "Published",
-      created: "2023-11-15",
-      lastUpdated: "2024-01-20"
-    },
-    {
-      id: 2,
-      title: "Advanced JavaScript Concepts",
-      students: 0,
-      revenue: 0,
-      status: "Draft", 
-      created: "2024-01-25",
-      lastUpdated: "2024-01-25"
-    }
-  ];
-
-  const certificates = [
-    {
-      id: 1,
-      courseName: "Data Science with Python",
-      issuedDate: "2024-01-20",
-      certificateId: "DS-2024-001"
-    }
-  ];
-
-  const userRole = user?.user_metadata?.role || 'student';
-
-  const handleEditCourse = (courseId: number) => {
+  const handleEditCourse = (courseId) => {
     console.log('Edit course:', courseId);
-    // TODO: Navigate to course edit page
+    // TODO: Navigate to course edit page or open edit modal
+    toast({
+      title: "Feature Coming Soon",
+      description: "Course editing will be available soon",
+    });
   };
 
-  const handleDeleteCourse = (courseId: number) => {
-    console.log('Delete course:', courseId);
-    // TODO: Implement delete course API call
+  const handleDeleteCourse = async (courseId) => {
+    if (!window.confirm('Are you sure you want to delete this course?')) {
+      return;
+    }
+
+    try {
+      await courseAPI.deleteCourse(courseId);
+      toast({
+        title: "Success",
+        description: "Course deleted successfully",
+      });
+      fetchUserData(); // Refresh the data
+    } catch (error) {
+      console.error('Delete course error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete course",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleViewCourse = (courseId: number) => {
+  const handleViewCourse = (courseId) => {
     console.log('View course:', courseId);
     // TODO: Navigate to course view page
+    window.open(`/courses/${courseId}`, '_blank');
   };
+
+  const handleCourseCreated = () => {
+    setShowCreateModal(false);
+    fetchUserData(); // Refresh the data
+  };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -99,7 +120,7 @@ const Profile = () => {
                   <div>
                     <p className="text-sm text-gray-500">Full Name</p>
                     <p className="font-medium">
-                      {user?.user_metadata?.first_name} {user?.user_metadata?.last_name}
+                      {user?.firstName} {user?.lastName}
                     </p>
                   </div>
                 </div>
@@ -123,7 +144,7 @@ const Profile = () => {
               <div className="flex items-center justify-center">
                 <div className="w-32 h-32 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                   <span className="text-4xl font-bold text-white">
-                    {user?.user_metadata?.first_name?.[0]}{user?.user_metadata?.last_name?.[0]}
+                    {user?.firstName?.[0]}{user?.lastName?.[0]}
                   </span>
                 </div>
               </div>
@@ -133,129 +154,120 @@ const Profile = () => {
 
         {/* Role-specific Content */}
         {userRole === 'student' && (
-          <Tabs defaultValue="courses" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="courses">My Courses</TabsTrigger>
-              <TabsTrigger value="certificates">Certificates</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="courses" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Enrolled Courses</CardTitle>
-                  <CardDescription>Track your learning progress</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {enrolledCourses.map((course) => (
-                      <div key={course.id} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="font-semibold">{course.title}</h3>
-                          <Badge 
-                            variant={course.status === 'Completed' ? 'default' : 'secondary'}
-                          >
-                            {course.status}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-2">by {course.instructor}</p>
-                        <div className="flex justify-between items-center">
-                          <div className="text-sm text-gray-500">
-                            Progress: {course.progress}% | Enrolled: {course.enrolledDate}
-                          </div>
-                          <Button size="sm" variant="outline">
-                            <BookOpen className="h-4 w-4 mr-1" />
-                            Continue
-                          </Button>
-                        </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>My Enrolled Courses</CardTitle>
+              <CardDescription>Track your learning progress</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {enrolledCourses.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">
+                    No courses enrolled yet. Start learning by browsing our course catalog!
+                  </p>
+                ) : (
+                  enrolledCourses.map((enrollment) => (
+                    <div key={enrollment._id} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="font-semibold">{enrollment.course.title}</h3>
+                        <Badge 
+                          variant={enrollment.status === 'completed' ? 'default' : 'secondary'}
+                        >
+                          {enrollment.status}
+                        </Badge>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="certificates" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>My Certificates</CardTitle>
-                  <CardDescription>Your earned certificates</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {certificates.map((cert) => (
-                      <div key={cert.id} className="border rounded-lg p-4">
-                        <div className="flex items-center space-x-3">
-                          <Award className="h-8 w-8 text-yellow-500" />
-                          <div className="flex-1">
-                            <h3 className="font-semibold">{cert.courseName}</h3>
-                            <p className="text-sm text-gray-600">
-                              Issued: {cert.issuedDate} | ID: {cert.certificateId}
-                            </p>
-                          </div>
-                          <Button size="sm" variant="outline">
-                            Download
-                          </Button>
+                      <p className="text-sm text-gray-600 mb-2">
+                        by {enrollment.course.instructorName}
+                      </p>
+                      <div className="flex justify-between items-center">
+                        <div className="text-sm text-gray-500">
+                          Progress: {enrollment.progress}% | Enrolled: {new Date(enrollment.enrollmentDate).toLocaleDateString()}
                         </div>
+                        <Button size="sm" variant="outline" onClick={() => handleViewCourse(enrollment.course._id)}>
+                          <BookOpen className="h-4 w-4 mr-1" />
+                          Continue
+                        </Button>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {userRole === 'teacher' && (
           <Card>
             <CardHeader>
-              <CardTitle>My Courses</CardTitle>
-              <CardDescription>Manage your created courses</CardDescription>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>My Courses</CardTitle>
+                  <CardDescription>Manage your created courses</CardDescription>
+                </div>
+                <Button onClick={() => setShowCreateModal(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create New Course
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {createdCourses.map((course) => (
-                  <div key={course.id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <h3 className="font-semibold">{course.title}</h3>
-                        <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
-                          <span>Students: {course.students}</span>
-                          <span>Revenue: ${course.revenue}</span>
-                          <Badge variant={course.status === 'Published' ? 'default' : 'secondary'}>
-                            {course.status}
-                          </Badge>
+                {createdCourses.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">
+                    No courses created yet. Create your first course to start teaching!
+                  </p>
+                ) : (
+                  createdCourses.map((course) => (
+                    <div key={course._id} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h3 className="font-semibold">{course.title}</h3>
+                          <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
+                            <span>Students: {course.students?.length || 0}</span>
+                            <span>Price: ${course.price}</span>
+                            <Badge variant={course.isPublished ? 'default' : 'secondary'}>
+                              {course.isPublished ? 'Published' : 'Draft'}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button size="sm" variant="outline" onClick={() => handleViewCourse(course._id)}>
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => handleEditCourse(course._id)}>
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="text-red-600"
+                            onClick={() => handleDeleteCourse(course._id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex space-x-2">
-                        <Button size="sm" variant="outline" onClick={() => handleViewCourse(course.id)}>
-                          <Eye className="h-4 w-4 mr-1" />
-                          View
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleEditCourse(course.id)}>
-                          <Edit className="h-4 w-4 mr-1" />
-                          Edit
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="text-red-600"
-                          onClick={() => handleDeleteCourse(course.id)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Delete
-                        </Button>
+                      <div className="text-xs text-gray-500">
+                        Created: {new Date(course.createdAt).toLocaleDateString()} | 
+                        Last updated: {new Date(course.updatedAt).toLocaleDateString()}
                       </div>
                     </div>
-                    <div className="text-xs text-gray-500">
-                      Created: {course.created} | Last updated: {course.lastUpdated}
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
         )}
       </div>
+
+      <CreateCourseModal 
+        open={showCreateModal} 
+        onClose={() => setShowCreateModal(false)}
+        onCourseCreated={handleCourseCreated}
+      />
     </DashboardLayout>
   );
 };

@@ -1,32 +1,46 @@
 
+const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 
-console.log('🔧 Setting up LearnHub MERN Stack Application...\n');
+console.log('🔧 Setting up LearnHub Backend...\n');
 
-// Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, 'backend', 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-  console.log('✅ Created uploads directory');
-}
-
-// Install backend dependencies
-console.log('📦 Installing backend dependencies...');
 try {
-  execSync('npm install', { 
-    cwd: path.join(__dirname, 'backend'),
-    stdio: 'inherit' 
-  });
-  console.log('✅ Backend dependencies installed');
+  // Create backend directory if it doesn't exist
+  if (!fs.existsSync('backend')) {
+    console.log('📁 Creating backend directory...');
+    fs.mkdirSync('backend');
+  }
+
+  // Create uploads directory
+  const uploadsDir = path.join('backend', 'uploads');
+  if (!fs.existsSync(uploadsDir)) {
+    console.log('📁 Creating uploads directory...');
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+
+  // Install backend dependencies
+  console.log('📦 Installing backend dependencies...');
+  process.chdir('backend');
+  
+  try {
+    execSync('npm install', { stdio: 'inherit' });
+    console.log('✅ Backend dependencies installed successfully!\n');
+  } catch (error) {
+    console.error('❌ Failed to install backend dependencies:', error.message);
+    process.exit(1);
+  }
+
+  // Go back to root directory
+  process.chdir('..');
+
+  console.log('🎉 Setup completed successfully!');
+  console.log('\n📋 Next steps:');
+  console.log('1. Run: node start.js');
+  console.log('2. Open your browser to: http://localhost:5173');
+  console.log('3. The backend API will be available at: http://localhost:5000\n');
+
 } catch (error) {
-  console.error('❌ Failed to install backend dependencies:', error.message);
+  console.error('❌ Setup failed:', error.message);
   process.exit(1);
 }
-
-console.log('\n🎉 Setup complete! You can now start the application with:');
-console.log('   node start.js');
-console.log('\nOr start services separately:');
-console.log('   Backend:  cd backend && npm run dev');
-console.log('   Frontend: npm run dev');

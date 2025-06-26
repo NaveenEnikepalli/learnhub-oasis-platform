@@ -46,8 +46,9 @@ const Auth = () => {
     e.preventDefault();
     try {
       await signIn(signInData.email, signInData.password);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Sign in error:', error);
+      // Error is already shown via toast in the service
     }
   };
 
@@ -67,15 +68,16 @@ const Auth = () => {
         signUpData.firstName,
         signUpData.lastName
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error('Sign up error:', error);
+      // Error is already shown via toast in the service
     }
   };
 
   const demoAccounts = [
-    { role: 'student', email: 'student@demo.com', password: 'password123' },
-    { role: 'teacher', email: 'teacher@demo.com', password: 'password123' },
-    { role: 'admin', email: 'admin@demo.com', password: 'password123' },
+    { role: 'student', email: 'student@demo.com', password: 'password123', name: 'Demo Student' },
+    { role: 'teacher', email: 'teacher@demo.com', password: 'password123', name: 'Demo Teacher' },
+    { role: 'admin', email: 'admin@demo.com', password: 'password123', name: 'Demo Admin' },
   ];
 
   const loginAsDemo = async (email: string, password: string) => {
@@ -185,7 +187,10 @@ const Auth = () => {
                         onClick={() => loginAsDemo(account.email, account.password)}
                         disabled={isLoading}
                       >
-                        Demo {account.role.charAt(0).toUpperCase() + account.role.slice(1)}
+                        <div className="flex items-center justify-between w-full">
+                          <span>{account.name}</span>
+                          <span className="text-xs text-gray-500 capitalize">{account.role}</span>
+                        </div>
                       </Button>
                     ))}
                   </div>
@@ -249,9 +254,9 @@ const Auth = () => {
                           <SelectValue placeholder="Select your role" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="student">Student</SelectItem>
-                          <SelectItem value="teacher">Teacher</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="student">Student - Learn from expert instructors</SelectItem>
+                          <SelectItem value="teacher">Teacher - Share your knowledge and expertise</SelectItem>
+                          <SelectItem value="admin">Administrator - Manage the platform</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

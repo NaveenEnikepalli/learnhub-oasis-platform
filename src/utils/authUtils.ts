@@ -50,7 +50,18 @@ export const clearAuth = () => {
 };
 
 export const getStoredUsers = () => {
-  return JSON.parse(localStorage.getItem('learnhub_users') || '[]');
+  const stored = localStorage.getItem('learnhub_users');
+  if (!stored) {
+    // Initialize with demo accounts
+    const demoUsers = [
+      { email: 'student@demo.com', password: 'password123', role: 'student', firstName: 'Demo', lastName: 'Student' },
+      { email: 'teacher@demo.com', password: 'password123', role: 'teacher', firstName: 'Demo', lastName: 'Teacher' },
+      { email: 'admin@demo.com', password: 'password123', role: 'admin', firstName: 'Demo', lastName: 'Admin' },
+    ];
+    localStorage.setItem('learnhub_users', JSON.stringify(demoUsers));
+    return demoUsers;
+  }
+  return JSON.parse(stored);
 };
 
 export const storeUser = (email: string, password: string, role: string, firstName: string, lastName: string) => {

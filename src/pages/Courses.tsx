@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,19 +9,20 @@ import { Star, Clock, Users, Play, Search, GraduationCap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { courseAPI, enrollmentAPI } from '@/services/api';
+import { mockAPI } from '@/services/mockApiService';
+import { Course } from '@/services/mockData';
 
 const Courses = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [courses, setCourses] = useState([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedLevel, setSelectedLevel] = useState('');
   const [priceRange, setPriceRange] = useState('');
 
-  const categories = ["All", "Web Development", "Data Science", "Digital Marketing", "Design", "Business"];
+  const categories = ["All", "Web Development", "Data Science", "Marketing", "Design", "Business"];
   const levels = ["All", "Beginner", "Intermediate", "Advanced"];
   const priceRanges = ["All", "Free", "$0-$50", "$50-$100", "$100-$200", "$200+"];
 
@@ -38,7 +40,7 @@ const Courses = () => {
       if (selectedLevel && selectedLevel !== 'All') params.level = selectedLevel;
       if (priceRange && priceRange !== 'All') params.priceRange = priceRange;
 
-      const response = await courseAPI.getAllCourses(params);
+      const response = await mockAPI.getAllCourses(params);
       setCourses(response.data);
     } catch (error) {
       console.error('Error fetching courses:', error);
@@ -52,23 +54,30 @@ const Courses = () => {
     }
   };
 
-  const enrollInCourse = async (courseId) => {
+  const enrollInCourse = async (courseId: string) => {
     if (!user) {
       navigate('/auth');
       return;
     }
 
-    try {
-      await enrollmentAPI.enrollInCourse(courseId);
+    if (user.role !== 'student') {
       toast({
-        title: "Success!",
-        description: "Successfully enrolled in the course",
+        title: "Access Denied",
+        description: "Only students can enroll in courses",
+        variant: "destructive",
       });
-    } catch (error) {
+      return;
+    }
+
+    try {
+      await mockAPI.enrollInCourse(courseId, user._id);
+      // Refresh courses to update student count
+      fetchCourses();
+    } catch (error: any) {
       console.error('Enrollment error:', error);
       toast({
         title: "Error",
-        description: error.response?.data?.message || "Failed to enroll in course",
+        description: error.message || "Failed to enroll in course",
         variant: "destructive",
       });
     }
@@ -171,6 +180,13 @@ const Courses = () => {
               </SelectContent>
             </Select>
           </div>
+          {(searchTerm || selectedCategory || selectedLevel || priceRange) && (
+            <div className="mt-4">
+              <Button onClick={clearFilters} variant="outline" size="sm">
+                Clear All Filters
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Results Count */}
@@ -230,13 +246,15 @@ const Courses = () => {
                       </span>
                     </div>
                     <span className="text-sm text-gray-500">
-                      ({course.students?.length || 0} students)
+                      ({course.rating?.count || 0} reviews)
                     </span>
                   </div>
 
                   <div className="mb-4">
                     <div className="flex items-center space-x-2">
-                      <span className="text-2xl font-bold text-blue-600">${course.price}</span>
+                      <span className="text-2xl font-bold text-blue-600">
+                        {course.price === 0 ? 'Free' : `$${course.price}`}
+                      </span>
                     </div>
                   </div>
 
@@ -254,8 +272,9 @@ const Courses = () => {
                   <Button 
                     className="w-full bg-blue-600 hover:bg-blue-700"
                     onClick={() => enrollInCourse(course._id)}
+                    disabled={user?.role !== 'student'}
                   >
-                    Enroll Now
+                    {user?.role !== 'student' ? 'Student Access Only' : 'Enroll Now'}
                   </Button>
                 </CardContent>
               </Card>

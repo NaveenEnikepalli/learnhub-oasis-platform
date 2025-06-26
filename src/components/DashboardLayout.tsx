@@ -1,18 +1,10 @@
 
 import { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
-import { GraduationCap, LogOut, Bell, Settings, User } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { GraduationCap, User, LogOut, BookOpen, Users, Settings } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -23,13 +15,19 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
+    try {
+      await signOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
   };
 
-  const userInitials = user?.firstName && user?.lastName
-    ? `${user.firstName[0]}${user.lastName[0]}`
-    : 'U';
+  const handleNavigation = (path: string) => {
+    navigate(path);
+  };
+
+  const userRole = user?.role || 'student';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -46,52 +44,50 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             </div>
             
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm">
-                <Bell className="h-5 w-5" />
+              <Button 
+                variant="outline" 
+                onClick={() => handleNavigation('/courses')}
+              >
+                <BookOpen className="h-4 w-4 mr-2" />
+                Browse Courses
               </Button>
               
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>{userInitials}</AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">
-                        {user ? `${user.firstName} ${user.lastName}` : 'User'}
-                      </p>
-                      <p className="text-xs leading-none text-muted-foreground">
-                        {user?.email}
-                      </p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate('/profile')}>
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Button 
+                variant="outline" 
+                onClick={() => handleNavigation('/profile')}
+              >
+                <User className="h-4 w-4 mr-2" />
+                Profile
+              </Button>
+              
+              <div className="flex items-center space-x-2 text-sm">
+                <div className="bg-blue-100 w-8 h-8 rounded-full flex items-center justify-center">
+                  <span className="text-blue-600 font-medium">
+                    {user?.firstName?.[0]}{user?.lastName?.[0]}
+                  </span>
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">
+                    {user?.firstName} {user?.lastName}
+                  </p>
+                  <p className="text-gray-500 capitalize">{userRole}</p>
+                </div>
+              </div>
+              
+              <Button 
+                variant="outline" 
+                onClick={handleSignOut}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
             </div>
           </div>
         </div>
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </main>
     </div>

@@ -29,7 +29,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/courses" element={<Courses />} />
             
-            {/* Profile Route */}
+            {/* Profile Route - Accessible to all authenticated users */}
             <Route path="/profile" element={
               <ProtectedRoute allowedRoles={['student', 'teacher', 'admin']}>
                 <Profile />

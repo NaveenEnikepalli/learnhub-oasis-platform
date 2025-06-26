@@ -1,11 +1,10 @@
 
-import React, { createContext, useEffect, useState } from 'react';
-import { toast } from '@/hooks/use-toast';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Session, AuthContextType } from '@/types/auth';
-import { getStoredAuth } from '@/utils/authUtils';
 import { signInUser, signUpUser, signOutUser, updateUserProfile } from '@/services/authService';
+import { getStoredAuth } from '@/utils/authUtils';
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -13,89 +12,110 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const { user: storedUser, session: storedSession } = getStoredAuth();
-    
-    if (storedUser && storedSession) {
-      setUser(storedUser);
-      setSession(storedSession);
-    }
-    
-    setIsLoading(false);
+    console.log('AuthProvider: Initializing...');
+    checkStoredAuth();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const checkStoredAuth = () => {
+    try {
+      const stored = getStoredAuth();
+      console.log('AuthProvider: Stored auth:', stored);
+      
+      if (stored.user && stored.session) {
+        // Validate that the user has a valid role
+        const validRoles = ['student', 'teacher', 'admin'];
+        if (validRoles.includes(stored.user.role)) {
+          setUser(stored.user);
+          setSession(stored.session);
+          console.log('AuthProvider: User loaded from storage:', stored.user.role);
+        } else {
+          console.warn('AuthProvider: Invalid user role found, clearing auth');
+          clearAuth();
+        }
+      }
+    } catch (error) {
+      console.error('AuthProvider: Error loading stored auth:', error);
+      clearAuth();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const clearAuth = () => {
+    localStorage.removeItem('learnhub_user');
+    localStorage.removeItem('learnhub_session');
+    setUser(null);
+    setSession(null);
+  };
+
+  const signIn = async (email: string, password: string): Promise<void> => {
     setIsLoading(true);
     try {
-      const { user: newUser, session: newSession } = await signInUser(email, password);
-      setUser(newUser);
-      setSession(newSession);
+      const { user: authUser, session: authSession } = await signInUser(email, password);
+      setUser(authUser);
+      setSession(authSession);
+      console.log('AuthProvider: User signed in:', authUser.role);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to sign in",
-        variant: "destructive",
-      });
+      console.error('AuthProvider: Sign in error:', error);
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const signUp = async (email: string, password: string, role: string, firstName: string, lastName: string) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    role: string,
+    firstName: string,
+    lastName: string
+  ): Promise<void> => {
     setIsLoading(true);
     try {
-      const { user: newUser, session: newSession } = await signUpUser(email, password, role, firstName, lastName);
-      setUser(newUser);
-      setSession(newSession);
+      const { user: authUser, session: authSession } = await signUpUser(
+        email,
+        password,
+        role,
+        firstName,
+        lastName
+      );
+      setUser(authUser);
+      setSession(authSession);
+      console.log('AuthProvider: User signed up:', authUser.role);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create account",
-        variant: "destructive",
-      });
+      console.error('AuthProvider: Sign up error:', error);
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const signOut = async () => {
-    setIsLoading(true);
+  const signOut = async (): Promise<void> => {
     try {
       await signOutUser();
-      setUser(null);
-      setSession(null);
+      clearAuth();
+      console.log('AuthProvider: User signed out');
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to sign out",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+      console.error('AuthProvider: Sign out error:', error);
+      // Still clear local auth even if service fails
+      clearAuth();
     }
   };
 
-  const updateProfile = async (data: any) => {
-    setIsLoading(true);
+  const updateProfile = async (data: any): Promise<void> => {
+    if (!user) throw new Error('No user logged in');
+    
     try {
-      if (!user) throw new Error('No user logged in');
-      
       const updatedUser = await updateUserProfile(user, data);
       setUser(updatedUser);
+      console.log('AuthProvider: Profile updated');
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update profile",
-        variant: "destructive",
-      });
+      console.error('AuthProvider: Update profile error:', error);
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const value = {
+  const value: AuthContextType = {
     user,
     session,
     isLoading,
@@ -105,5 +125,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateProfile,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };

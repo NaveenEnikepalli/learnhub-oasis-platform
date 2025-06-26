@@ -1,72 +1,111 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BookOpen, Clock, Award, Star, Play, Calendar, MessageSquare, User, LogOut } from 'lucide-react';
+import { BookOpen, Clock, Award, Star, Play, Calendar, User, TrendingUp } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/DashboardLayout';
+import { mockAPI } from '@/services/mockApiService';
+import { Enrollment } from '@/services/mockData';
+import { toast } from '@/hooks/use-toast';
 
 const StudentDashboard = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const enrolledCourses = [
-    {
-      id: 1,
-      title: "Complete Web Development Bootcamp",
-      instructor: "John Smith",
-      progress: 65,
-      totalLessons: 120,
-      completedLessons: 78,
-      nextLesson: "Advanced React Hooks",
-      timeLeft: "2 weeks",
-      image: "/placeholder.svg"
-    },
-    {
-      id: 2,
-      title: "Data Science with Python",
-      instructor: "Sarah Johnson",
-      progress: 30,
-      totalLessons: 90,
-      completedLessons: 27,
-      nextLesson: "Pandas DataFrames",
-      timeLeft: "6 weeks",
-      image: "/placeholder.svg"
-    },
-    {
-      id: 3,
-      title: "Digital Marketing Mastery",
-      instructor: "Mike Wilson",
-      progress: 90,
-      totalLessons: 50,
-      completedLessons: 45,
-      nextLesson: "Analytics Setup",
-      timeLeft: "3 days",
-      image: "/placeholder.svg"
+  useEffect(() => {
+    if (user) {
+      fetchEnrollments();
     }
+  }, [user]);
+
+  const fetchEnrollments = async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      const response = await mockAPI.getMyEnrollments(user._id);
+      setEnrollments(response.data);
+    } catch (error) {
+      console.error('Error fetching enrollments:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load enrolled courses",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleContinueLearning = async (enrollment: Enrollment) => {
+    try {
+      // Update last accessed
+      await mockAPI.updateProgress(enrollment._id, enrollment.progress);
+      
+      toast({
+        title: "Continuing Course",
+        description: `Resuming ${enrollment.course.title}`,
+      });
+      
+      // In a real app, this would navigate to the course content
+      console.log('Continue learning:', enrollment.course.title);
+    } catch (error) {
+      console.error('Error continuing course:', error);
+    }
+  };
+
+  // Calculate stats from real enrollment data
+  const stats = [
+    { 
+      label: "Courses Enrolled", 
+      value: enrollments.length.toString(), 
+      icon: BookOpen 
+    },
+    { 
+      label: "Hours Learned", 
+      value: enrollments.reduce((total, e) => total + (e.course.duration * e.progress / 100), 0).toFixed(0), 
+      icon: Clock 
+    },
+    { 
+      label: "Certificates", 
+      value: enrollments.filter(e => e.status === 'completed').length.toString(), 
+      icon: Award 
+    },
+    { 
+      label: "Avg Progress", 
+      value: enrollments.length > 0 ? Math.round(enrollments.reduce((sum, e) => sum + e.progress, 0) / enrollments.length).toString() + '%' : '0%', 
+      icon: TrendingUp 
+    },
   ];
 
   const achievements = [
-    { title: "First Course Completed", date: "2024-01-15", icon: Award },
-    { title: "7-Day Streak", date: "2024-01-20", icon: Calendar },
-    { title: "Top Performer", date: "2024-01-25", icon: Star },
+    { title: "First Course Enrolled", date: "2024-01-15", icon: Award },
+    { title: "Learning Streak", date: "2024-01-20", icon: Calendar },
+    { title: "Course Completed", date: "2024-01-25", icon: Star },
   ];
 
-  const recentActivity = [
-    { action: "Completed lesson", course: "Web Development", time: "2 hours ago" },
-    { action: "Started new course", course: "Data Science", time: "1 day ago" },
-    { action: "Earned certificate", course: "Digital Marketing", time: "3 days ago" },
-  ];
+  const recentActivity = enrollments.slice(0, 5).map(enrollment => ({
+    action: enrollment.status === 'completed' ? 'Completed course' : 'Studying course',
+    course: enrollment.course.title,
+    time: new Date(enrollment.lastAccessed).toLocaleDateString()
+  }));
 
-  const stats = [
-    { label: "Courses Enrolled", value: "3", icon: BookOpen },
-    { label: "Hours Learned", value: "127", icon: Clock },
-    { label: "Certificates", value: "2", icon: Award },
-    { label: "Course Rating", value: "4.8", icon: Star },
-  ];
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -118,65 +157,89 @@ const StudentDashboard = () => {
               <h2 className="text-2xl font-bold">My Enrolled Courses</h2>
               <Button onClick={() => navigate('/courses')}>Browse More Courses</Button>
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {enrolledCourses.map((course) => (
-                <Card key={course.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <CardTitle className="text-lg line-clamp-2">{course.title}</CardTitle>
-                        <CardDescription>by {course.instructor}</CardDescription>
+            
+            {enrollments.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No courses enrolled yet</h3>
+                  <p className="text-gray-600 mb-4">Start learning by browsing our course catalog!</p>
+                  <Button onClick={() => navigate('/courses')}>
+                    Browse Courses
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {enrollments.map((enrollment) => (
+                  <Card key={enrollment._id} className="hover:shadow-lg transition-shadow">
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <CardTitle className="text-lg line-clamp-2">{enrollment.course.title}</CardTitle>
+                          <CardDescription>by {enrollment.course.instructorName}</CardDescription>
+                        </div>
+                        <Badge variant={enrollment.status === 'completed' ? 'default' : 'secondary'}>
+                          {enrollment.progress}%
+                        </Badge>
                       </div>
-                      <Badge variant="secondary">{course.progress}%</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>Progress</span>
-                        <span>{course.completedLessons}/{course.totalLessons} lessons</span>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Progress</span>
+                          <span>{enrollment.progress}% complete</span>
+                        </div>
+                        <Progress value={enrollment.progress} className="h-2" />
                       </div>
-                      <Progress value={course.progress} className="h-2" />
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium">Next: {course.nextLesson}</p>
-                      <p className="text-sm text-gray-600">Time left: {course.timeLeft}</p>
-                    </div>
-                    <Button className="w-full" size="sm">
-                      <Play className="h-4 w-4 mr-2" />
-                      Continue Learning
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Status: {enrollment.status}</p>
+                        <p className="text-sm text-gray-600">
+                          Enrolled: {new Date(enrollment.enrollmentDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <Button 
+                        className="w-full" 
+                        size="sm"
+                        onClick={() => handleContinueLearning(enrollment)}
+                      >
+                        <Play className="h-4 w-4 mr-2" />
+                        {enrollment.status === 'completed' ? 'Review Course' : 'Continue Learning'}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="progress" className="space-y-6">
             <h2 className="text-2xl font-bold">Learning Progress</h2>
             <div className="space-y-6">
-              {enrolledCourses.map((course) => (
-                <Card key={course.id}>
+              {enrollments.map((enrollment) => (
+                <Card key={enrollment._id}>
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <h3 className="font-semibold">{course.title}</h3>
-                        <p className="text-sm text-gray-600">by {course.instructor}</p>
+                        <h3 className="font-semibold">{enrollment.course.title}</h3>
+                        <p className="text-sm text-gray-600">by {enrollment.course.instructorName}</p>
                       </div>
-                      <Badge variant="outline">{course.progress}% Complete</Badge>
+                      <Badge variant="outline">{enrollment.progress}% Complete</Badge>
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span>Lessons Completed</span>
-                        <span>{course.completedLessons} of {course.totalLessons}</span>
+                        <span>Progress</span>
+                        <span>{enrollment.progress}% of {enrollment.course.duration} hours</span>
                       </div>
-                      <Progress value={course.progress} className="h-3" />
+                      <Progress value={enrollment.progress} className="h-3" />
                     </div>
                     <div className="mt-4 flex justify-between items-center">
                       <span className="text-sm text-gray-600">
-                        Next: {course.nextLesson}
+                        Status: {enrollment.status}
                       </span>
-                      <Button size="sm">Continue</Button>
+                      <Button size="sm" onClick={() => handleContinueLearning(enrollment)}>
+                        Continue
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -204,19 +267,27 @@ const StudentDashboard = () => {
           <TabsContent value="activity" className="space-y-6">
             <h2 className="text-2xl font-bold">Recent Activity</h2>
             <div className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <Card key={index}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">{activity.action}</p>
-                        <p className="text-sm text-gray-600">{activity.course}</p>
-                      </div>
-                      <span className="text-sm text-gray-500">{activity.time}</span>
-                    </div>
+              {recentActivity.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <p className="text-gray-500">No recent activity</p>
                   </CardContent>
                 </Card>
-              ))}
+              ) : (
+                recentActivity.map((activity, index) => (
+                  <Card key={index}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">{activity.action}</p>
+                          <p className="text-sm text-gray-600">{activity.course}</p>
+                        </div>
+                        <span className="text-sm text-gray-500">{activity.time}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
           </TabsContent>
         </Tabs>

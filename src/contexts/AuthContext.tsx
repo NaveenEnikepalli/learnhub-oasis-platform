@@ -4,7 +4,8 @@ import { User, Session, AuthContextType } from '@/types/auth';
 import { signInUser, signUpUser, signOutUser, updateUserProfile } from '@/services/authService';
 import { getStoredAuth } from '@/utils/authUtils';
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Export the AuthContext so it can be imported by useAuth hook
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);

@@ -1,43 +1,41 @@
 
-import { toast } from '@/hooks/use-toast';
 import { User, Session } from '@/types/auth';
 import { 
   createMockUser, 
   createMockSession, 
   storeAuth, 
-  clearAuth, 
-  storeUser, 
   findStoredUser, 
-  userExists 
+  userExists, 
+  storeUser 
 } from '@/utils/authUtils';
+import { toast } from '@/hooks/use-toast';
 
 export const signInUser = async (email: string, password: string): Promise<{ user: User; session: Session }> => {
-  // Simulate API call delay
+  // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 1000));
   
   const foundUser = findStoredUser(email, password);
   
   if (!foundUser) {
+    toast({
+      title: "Error",
+      description: "Invalid email or password",
+      variant: "destructive",
+    });
     throw new Error('Invalid credentials');
   }
   
-  const mockUser = createMockUser(
-    foundUser.email, 
-    foundUser.role, 
-    foundUser.firstName, 
-    foundUser.lastName
-  );
+  const user = createMockUser(foundUser.email, foundUser.role, foundUser.firstName, foundUser.lastName);
+  const session = createMockSession(user);
   
-  const mockSession = createMockSession(mockUser);
-  
-  storeAuth(mockUser, mockSession);
+  storeAuth(user, session);
   
   toast({
-    title: "Welcome back!",
-    description: "You have successfully signed in.",
+    title: "Success!",
+    description: "Successfully signed in",
   });
-
-  return { user: mockUser, session: mockSession };
+  
+  return { user, session };
 };
 
 export const signUpUser = async (
@@ -47,56 +45,68 @@ export const signUpUser = async (
   firstName: string, 
   lastName: string
 ): Promise<{ user: User; session: Session }> => {
-  // Simulate API call delay
+  // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 1000));
   
   if (userExists(email)) {
+    toast({
+      title: "Error",
+      description: "User already exists with this email",
+      variant: "destructive",
+    });
     throw new Error('User already exists');
   }
   
   storeUser(email, password, role, firstName, lastName);
   
-  const mockUser = createMockUser(email, role, firstName, lastName);
-  const mockSession = createMockSession(mockUser);
+  const user = createMockUser(email, role, firstName, lastName);
+  const session = createMockSession(user);
   
-  storeAuth(mockUser, mockSession);
+  storeAuth(user, session);
   
   toast({
-    title: "Welcome to LearnHub!",
-    description: "Your account has been created successfully.",
+    title: "Success!",
+    description: "Account created successfully",
   });
-
-  return { user: mockUser, session: mockSession };
+  
+  return { user, session };
 };
 
 export const signOutUser = async (): Promise<void> => {
-  clearAuth();
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 500));
   
   toast({
-    title: "Signed out",
-    description: "You have been successfully signed out.",
+    title: "Signed Out",
+    description: "You have been successfully signed out",
   });
 };
 
 export const updateUserProfile = async (user: User, data: any): Promise<User> => {
-  const updatedUser = {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 800));
+  
+  const updatedUser: User = {
     ...user,
-    ...data,
+    firstName: data.firstName || user.firstName,
+    lastName: data.lastName || user.lastName,
+    bio: data.bio || user.bio,
+    updatedAt: new Date().toISOString(),
   };
   
+  // Update stored user data
   const storedSession = localStorage.getItem('learnhub_session');
   if (storedSession) {
     const session = JSON.parse(storedSession);
     session.user = updatedUser;
     localStorage.setItem('learnhub_session', JSON.stringify(session));
   }
-  
   localStorage.setItem('learnhub_user', JSON.stringify(updatedUser));
   
   toast({
-    title: "Profile updated",
-    description: "Your profile has been updated successfully.",
+    title: "Success!",
+    description: "Profile updated successfully",
   });
-
+  
   return updatedUser;
 };

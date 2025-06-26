@@ -89,7 +89,8 @@ const Profile = () => {
 
   const handleCourseCreated = async (courseData: any) => {
     try {
-      await mockAPI.createCourse(courseData);
+      if (!user) throw new Error('User not found');
+      await mockAPI.createCourse(courseData, user._id);
       setShowCreateModal(false);
       fetchUserData(); // Refresh the data
       toast({

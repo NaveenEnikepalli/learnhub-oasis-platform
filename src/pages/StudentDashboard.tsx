@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/DashboardLayout';
 import { mockAPI } from '@/services/mockApiService';
-import { Enrollment } from '@/types/mockData';
+import { Enrollment } from '@/services/mockData';
 import { toast } from '@/hooks/use-toast';
 
 const StudentDashboard = () => {

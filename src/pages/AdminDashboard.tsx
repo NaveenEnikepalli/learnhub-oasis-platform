@@ -20,7 +20,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import DashboardLayout from '@/components/DashboardLayout';
 import { mockAPI } from '@/services/mockApiService';
-import { Course, Enrollment } from '@/types/mockData';
+import { Course, Enrollment } from '@/services/mockData';
 import { toast } from '@/hooks/use-toast';
 
 const AdminDashboard = () => {

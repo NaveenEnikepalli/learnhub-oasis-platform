@@ -1,5 +1,6 @@
 
-import { Course, User, Enrollment } from '@/types/mockData';
+import { Course, User } from '@/types/mockData';
+import { Enrollment } from '@/services/mockData';
 import { toast } from '@/hooks/use-toast';
 
 // Enhanced mock data with persistence

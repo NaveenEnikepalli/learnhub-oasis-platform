@@ -32,7 +32,12 @@ export interface Course {
 
 export interface Enrollment {
   _id: string;
-  student: string;
+  student: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
   course: Course;
   enrollmentDate: string;
   progress: number;

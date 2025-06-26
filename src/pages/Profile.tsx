@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -88,9 +87,23 @@ const Profile = () => {
     setIsEditing(false);
   };
 
-  const handleCourseCreated = () => {
-    setShowCreateModal(false);
-    fetchUserData(); // Refresh the data
+  const handleCourseCreated = async (courseData: any) => {
+    try {
+      await mockAPI.createCourse(courseData);
+      setShowCreateModal(false);
+      fetchUserData(); // Refresh the data
+      toast({
+        title: "Success",
+        description: "Course created successfully",
+      });
+    } catch (error) {
+      console.error('Error creating course:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create course",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -384,9 +397,9 @@ const Profile = () => {
       </div>
 
       <CreateCourseModal 
-        open={showCreateModal} 
+        isOpen={showCreateModal} 
         onClose={() => setShowCreateModal(false)}
-        onCourseCreated={handleCourseCreated}
+        onSubmit={handleCourseCreated}
       />
     </DashboardLayout>
   );

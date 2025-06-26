@@ -43,22 +43,6 @@ export interface CourseMaterial {
   order: number;
 }
 
-export interface Enrollment {
-  _id: string;
-  student: {
-    _id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-  course: Course;
-  enrollmentDate: string;
-  progress: number;
-  status: 'enrolled' | 'in-progress' | 'completed' | 'dropped';
-  completionDate: string | null;
-  lastAccessed: string;
-}
-
 export interface Analytics {
   totalCourses: number;
   totalEnrollments: number;
@@ -67,5 +51,5 @@ export interface Analytics {
   revenue: number;
   completionRate: number;
   popularCourses: Course[];
-  recentEnrollments: Enrollment[];
+  recentEnrollments: any[];
 }

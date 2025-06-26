@@ -172,7 +172,12 @@ export const getEnrollmentsForStudent = (studentId: string): Enrollment[] => {
   
   return enrolledCourses.map((course, index) => ({
     _id: `enrollment_${studentId}_${course._id}`,
-    student: studentId,
+    student: {
+      _id: studentId,
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'john.doe@example.com'
+    },
     course,
     enrollmentDate: new Date(Date.now() - (index * 7 * 24 * 60 * 60 * 1000)).toISOString(),
     progress: index === 0 ? 65 : index === 1 ? 30 : 90,

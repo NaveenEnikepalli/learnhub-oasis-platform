@@ -5,12 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BookOpen, Clock, Award, Star, Play, Calendar, User, TrendingUp } from 'lucide-react';
+import { BookOpen, Clock, Award, Star, Play, Calendar, TrendingUp, Target, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/DashboardLayout';
 import { mockAPI } from '@/services/mockApiService';
-import { Enrollment } from '@/services/mockData';
+import { Enrollment } from '@/types/mockData';
 import { toast } from '@/hooks/use-toast';
 
 const StudentDashboard = () => {
@@ -46,56 +46,100 @@ const StudentDashboard = () => {
 
   const handleContinueLearning = async (enrollment: Enrollment) => {
     try {
-      // Update last accessed
-      await mockAPI.updateProgress(enrollment._id, enrollment.progress);
+      // Simulate progress update
+      const newProgress = Math.min(enrollment.progress + 10, 100);
+      await mockAPI.updateProgress(enrollment._id, newProgress);
       
       toast({
-        title: "Continuing Course",
-        description: `Resuming ${enrollment.course.title}`,
+        title: "Progress Updated",
+        description: `Continuing "${enrollment.course.title}" - ${newProgress}% complete`,
       });
       
-      // In a real app, this would navigate to the course content
-      console.log('Continue learning:', enrollment.course.title);
+      // Refresh enrollments
+      fetchEnrollments();
     } catch (error) {
-      console.error('Error continuing course:', error);
+      console.error('Error updating progress:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update progress",
+        variant: "destructive",
+      });
     }
   };
 
   // Calculate stats from real enrollment data
+  const totalHoursLearned = enrollments.reduce((total, e) => total + (e.course.duration * e.progress / 100), 0);
+  const completedCourses = enrollments.filter(e => e.status === 'completed').length;
+  const avgProgress = enrollments.length > 0 ? Math.round(enrollments.reduce((sum, e) => sum + e.progress, 0) / enrollments.length) : 0;
+  const inProgressCourses = enrollments.filter(e => e.status === 'in-progress').length;
+
   const stats = [
     { 
       label: "Courses Enrolled", 
       value: enrollments.length.toString(), 
-      icon: BookOpen 
+      icon: BookOpen,
+      color: "text-blue-600"
     },
     { 
       label: "Hours Learned", 
-      value: enrollments.reduce((total, e) => total + (e.course.duration * e.progress / 100), 0).toFixed(0), 
-      icon: Clock 
+      value: totalHoursLearned.toFixed(1), 
+      icon: Clock,
+      color: "text-green-600"
     },
     { 
-      label: "Certificates", 
-      value: enrollments.filter(e => e.status === 'completed').length.toString(), 
-      icon: Award 
+      label: "Certificates Earned", 
+      value: completedCourses.toString(), 
+      icon: Award,
+      color: "text-yellow-600"
     },
     { 
-      label: "Avg Progress", 
-      value: enrollments.length > 0 ? Math.round(enrollments.reduce((sum, e) => sum + e.progress, 0) / enrollments.length).toString() + '%' : '0%', 
-      icon: TrendingUp 
+      label: "Average Progress", 
+      value: `${avgProgress}%`, 
+      icon: TrendingUp,
+      color: "text-purple-600"
     },
   ];
 
   const achievements = [
-    { title: "First Course Enrolled", date: "2024-01-15", icon: Award },
-    { title: "Learning Streak", date: "2024-01-20", icon: Calendar },
-    { title: "Course Completed", date: "2024-01-25", icon: Star },
+    { 
+      title: "First Course Enrolled", 
+      description: "Welcome to LearnHub!", 
+      date: enrollments.length > 0 ? new Date(enrollments[0].enrollmentDate).toLocaleDateString() : "Not yet", 
+      icon: Target,
+      earned: enrollments.length > 0 
+    },
+    { 
+      title: "Learning Streak", 
+      description: "3 days in a row", 
+      date: "2024-01-20", 
+      icon: Calendar,
+      earned: true 
+    },
+    { 
+      title: "Course Completed", 
+      description: "Finished your first course", 
+      date: completedCourses > 0 ? "Earned" : "Not yet", 
+      icon: CheckCircle,
+      earned: completedCourses > 0 
+    },
+    { 
+      title: "Knowledge Seeker", 
+      description: "Enrolled in 5+ courses", 
+      date: enrollments.length >= 5 ? "Earned" : "Not yet", 
+      icon: Star,
+      earned: enrollments.length >= 5 
+    },
   ];
 
-  const recentActivity = enrollments.slice(0, 5).map(enrollment => ({
-    action: enrollment.status === 'completed' ? 'Completed course' : 'Studying course',
-    course: enrollment.course.title,
-    time: new Date(enrollment.lastAccessed).toLocaleDateString()
-  }));
+  const recentActivity = enrollments
+    .sort((a, b) => new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime())
+    .slice(0, 5)
+    .map(enrollment => ({
+      action: enrollment.status === 'completed' ? 'Completed course' : 'Studying course',
+      course: enrollment.course.title,
+      time: new Date(enrollment.lastAccessed).toLocaleDateString(),
+      progress: enrollment.progress
+    }));
 
   if (loading) {
     return (
@@ -116,14 +160,34 @@ const StudentDashboard = () => {
             Welcome back, {user?.firstName}!
           </h1>
           <p className="text-blue-100 mb-4">
-            Continue your learning journey and achieve your goals
+            {enrollments.length === 0 
+              ? "Ready to start your learning journey? Browse our courses and enroll today!"
+              : `You have ${inProgressCourses} courses in progress. Keep up the great work!`
+            }
           </p>
-          <Button 
-            className="bg-white text-blue-600 hover:bg-gray-100"
-            onClick={() => navigate('/courses')}
-          >
-            Browse Courses
-          </Button>
+          <div className="flex space-x-4">
+            <Button 
+              className="bg-white text-blue-600 hover:bg-gray-100"
+              onClick={() => navigate('/courses')}
+            >
+              Browse Courses
+            </Button>
+            {enrollments.length > 0 && (
+              <Button 
+                variant="outline"
+                className="border-white text-white hover:bg-white hover:text-blue-600"
+                onClick={() => {
+                  const latestEnrollment = enrollments
+                    .sort((a, b) => new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime())[0];
+                  if (latestEnrollment) {
+                    handleContinueLearning(latestEnrollment);
+                  }
+                }}
+              >
+                Continue Learning
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Stats Grid */}
@@ -136,7 +200,7 @@ const StudentDashboard = () => {
                     <p className="text-sm font-medium text-gray-600">{stat.label}</p>
                     <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
                   </div>
-                  <stat.icon className="h-8 w-8 text-blue-600" />
+                  <stat.icon className={`h-8 w-8 ${stat.color}`} />
                 </div>
               </CardContent>
             </Card>
@@ -193,10 +257,15 @@ const StudentDashboard = () => {
                         <Progress value={enrollment.progress} className="h-2" />
                       </div>
                       <div className="space-y-2">
-                        <p className="text-sm font-medium">Status: {enrollment.status}</p>
+                        <p className="text-sm font-medium capitalize">Status: {enrollment.status}</p>
                         <p className="text-sm text-gray-600">
                           Enrolled: {new Date(enrollment.enrollmentDate).toLocaleDateString()}
                         </p>
+                        {enrollment.status === 'completed' && enrollment.completionDate && (
+                          <p className="text-sm text-green-600">
+                            Completed: {new Date(enrollment.completionDate).toLocaleDateString()}
+                          </p>
+                        )}
                       </div>
                       <Button 
                         className="w-full" 
@@ -215,49 +284,66 @@ const StudentDashboard = () => {
 
           <TabsContent value="progress" className="space-y-6">
             <h2 className="text-2xl font-bold">Learning Progress</h2>
-            <div className="space-y-6">
-              {enrollments.map((enrollment) => (
-                <Card key={enrollment._id}>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h3 className="font-semibold">{enrollment.course.title}</h3>
-                        <p className="text-sm text-gray-600">by {enrollment.course.instructorName}</p>
+            {enrollments.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <TrendingUp className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No progress to show</h3>
+                  <p className="text-gray-600">Enroll in courses to track your learning progress</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-6">
+                {enrollments.map((enrollment) => (
+                  <Card key={enrollment._id}>
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="font-semibold">{enrollment.course.title}</h3>
+                          <p className="text-sm text-gray-600">by {enrollment.course.instructorName}</p>
+                        </div>
+                        <Badge variant="outline">{enrollment.progress}% Complete</Badge>
                       </div>
-                      <Badge variant="outline">{enrollment.progress}% Complete</Badge>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>Progress</span>
-                        <span>{enrollment.progress}% of {enrollment.course.duration} hours</span>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Progress</span>
+                          <span>{enrollment.progress}% of {enrollment.course.duration} hours</span>
+                        </div>
+                        <Progress value={enrollment.progress} className="h-3" />
                       </div>
-                      <Progress value={enrollment.progress} className="h-3" />
-                    </div>
-                    <div className="mt-4 flex justify-between items-center">
-                      <span className="text-sm text-gray-600">
-                        Status: {enrollment.status}
-                      </span>
-                      <Button size="sm" onClick={() => handleContinueLearning(enrollment)}>
-                        Continue
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                      <div className="mt-4 flex justify-between items-center">
+                        <span className="text-sm text-gray-600 capitalize">
+                          Status: {enrollment.status}
+                        </span>
+                        <Button size="sm" onClick={() => handleContinueLearning(enrollment)}>
+                          Continue
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="achievements" className="space-y-6">
             <h2 className="text-2xl font-bold">Your Achievements</h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {achievements.map((achievement, index) => (
-                <Card key={index} className="text-center">
+                <Card key={index} className={`text-center ${achievement.earned ? 'bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200' : 'bg-gray-50'}`}>
                   <CardContent className="p-6">
-                    <div className="bg-yellow-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <achievement.icon className="h-8 w-8 text-yellow-600" />
+                    <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
+                      achievement.earned ? 'bg-yellow-100' : 'bg-gray-200'
+                    }`}>
+                      <achievement.icon className={`h-8 w-8 ${
+                        achievement.earned ? 'text-yellow-600' : 'text-gray-400'
+                      }`} />
                     </div>
                     <h3 className="font-semibold mb-2">{achievement.title}</h3>
-                    <p className="text-sm text-gray-600">{achievement.date}</p>
+                    <p className="text-sm text-gray-600 mb-2">{achievement.description}</p>
+                    <p className={`text-sm ${achievement.earned ? 'text-yellow-600 font-medium' : 'text-gray-500'}`}>
+                      {achievement.date}
+                    </p>
                   </CardContent>
                 </Card>
               ))}
@@ -270,7 +356,9 @@ const StudentDashboard = () => {
               {recentActivity.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center">
-                    <p className="text-gray-500">No recent activity</p>
+                    <Clock className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No recent activity</h3>
+                    <p className="text-gray-600">Start learning to see your activity here</p>
                   </CardContent>
                 </Card>
               ) : (
@@ -278,11 +366,19 @@ const StudentDashboard = () => {
                   <Card key={index}>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">{activity.action}</p>
-                          <p className="text-sm text-gray-600">{activity.course}</p>
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-2 h-2 rounded-full ${
+                            activity.action.includes('Completed') ? 'bg-green-500' : 'bg-blue-500'
+                          }`}></div>
+                          <div>
+                            <p className="font-medium">{activity.action}</p>
+                            <p className="text-sm text-gray-600">{activity.course}</p>
+                          </div>
                         </div>
-                        <span className="text-sm text-gray-500">{activity.time}</span>
+                        <div className="text-right">
+                          <span className="text-sm text-gray-500">{activity.time}</span>
+                          <div className="text-xs text-gray-400">{activity.progress}% complete</div>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>

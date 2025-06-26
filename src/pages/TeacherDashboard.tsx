@@ -4,19 +4,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BookOpen, Users, DollarSign, TrendingUp, Plus, Edit, Trash2, Eye, BarChart3 } from 'lucide-react';
+import { BookOpen, Users, DollarSign, Eye, Edit, Trash2, Plus, BarChart3 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { toast } from '@/hooks/use-toast';
 import DashboardLayout from '@/components/DashboardLayout';
 import CreateCourseModal from '@/components/CreateCourseModal';
 import { mockAPI } from '@/services/mockApiService';
-import { Course } from '@/services/mockData';
+import { Course } from '@/types/mockData';
+import { toast } from '@/hooks/use-toast';
 
 const TeacherDashboard = () => {
   const { user } = useAuth();
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -43,94 +43,101 @@ const TeacherDashboard = () => {
     }
   };
 
-  const handleDeleteCourse = async (courseId: string) => {
-    if (!window.confirm('Are you sure you want to delete this course? This action cannot be undone.')) {
-      return;
-    }
-
+  const handleCreateCourse = async (courseData: any) => {
     if (!user) return;
-
+    
     try {
-      await mockAPI.deleteCourse(courseId, user._id);
-      fetchCourses(); // Refresh the data
-    } catch (error: any) {
-      console.error('Delete course error:', error);
+      await mockAPI.createCourse(courseData, user._id);
+      setIsCreateModalOpen(false);
+      fetchCourses(); // Refresh courses list
+    } catch (error) {
+      console.error('Error creating course:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to delete course",
+        description: "Failed to create course",
         variant: "destructive",
       });
     }
   };
 
   const handlePublishToggle = async (courseId: string) => {
-    if (!user) return;
-
     try {
-      await mockAPI.publishCourse(courseId, user._id);
-      fetchCourses(); // Refresh the data
-    } catch (error: any) {
-      console.error('Publish course error:', error);
+      await mockAPI.publishCourse(courseId);
+      fetchCourses(); // Refresh courses list
+    } catch (error) {
+      console.error('Error toggling publish status:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to update course status",
+        description: "Failed to update course status",
         variant: "destructive",
       });
     }
   };
 
+  const handleDeleteCourse = async (courseId: string, courseTitle: string) => {
+    if (window.confirm(`Are you sure you want to delete "${courseTitle}"? This action cannot be undone.`)) {
+      try {
+        await mockAPI.deleteCourse(courseId);
+        fetchCourses(); // Refresh courses list
+      } catch (error) {
+        console.error('Error deleting course:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete course",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   const handleEditCourse = (courseId: string) => {
-    console.log('Edit course:', courseId);
     toast({
-      title: "Feature Coming Soon",
-      description: "Course editing will be available soon",
+      title: "Edit Course",
+      description: "Course editing functionality would open here",
     });
   };
 
   const handleViewCourse = (courseId: string) => {
-    console.log('View course:', courseId);
     toast({
-      title: "Course Details",
-      description: "Course viewing feature coming soon",
+      title: "View Course",
+      description: "Course preview would open here",
     });
   };
 
-  const handleCourseCreated = () => {
-    setShowCreateModal(false);
-    fetchCourses(); // Refresh the data
-  };
+  // Calculate stats from real course data
+  const totalStudents = courses.reduce((sum, course) => sum + (course.students?.length || 0), 0);
+  const publishedCourses = courses.filter(course => course.isPublished).length;
+  const totalRevenue = courses.reduce((sum, course) => sum + (course.price * (course.students?.length || 0)), 0);
+  const avgRating = courses.length > 0 
+    ? courses.reduce((sum, course) => sum + (course.rating?.average || 0), 0) / courses.length 
+    : 0;
 
-  // Calculate stats from real data
   const stats = [
     { 
       label: "Total Courses", 
       value: courses.length.toString(), 
-      icon: BookOpen, 
-      change: `+${courses.filter(c => new Date(c.createdAt) > new Date(Date.now() - 30*24*60*60*1000)).length} this month`
+      icon: BookOpen,
+      color: "text-blue-600"
     },
     { 
       label: "Total Students", 
-      value: courses.reduce((total, course) => total + (course.students?.length || 0), 0).toLocaleString(), 
-      icon: Users, 
-      change: "across all courses"
+      value: totalStudents.toString(), 
+      icon: Users,
+      color: "text-green-600"
     },
     { 
-      label: "Total Revenue", 
-      value: `$${courses.reduce((total, course) => total + (course.price * (course.students?.length || 0)), 0).toLocaleString()}`, 
-      icon: DollarSign, 
-      change: "estimated earnings"
+      label: "Revenue", 
+      value: `$${totalRevenue.toFixed(2)}`, 
+      icon: DollarSign,
+      color: "text-yellow-600"
     },
     { 
-      label: "Published Courses", 
-      value: courses.filter(c => c.isPublished).length.toString(), 
-      icon: TrendingUp, 
-      change: `${Math.round((courses.filter(c => c.isPublished).length / Math.max(courses.length, 1)) * 100)}% of total`
+      label: "Avg Rating", 
+      value: avgRating.toFixed(1), 
+      icon: BarChart3,
+      color: "text-purple-600"
     },
   ];
-
-  const getStatusColor = (isPublished: boolean) => {
-    return isPublished ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
-  };
 
   if (loading) {
     return (
@@ -151,11 +158,14 @@ const TeacherDashboard = () => {
             Welcome, {user?.firstName}!
           </h1>
           <p className="text-green-100 mb-4">
-            Share your knowledge and inspire learners worldwide
+            {courses.length === 0 
+              ? "Ready to share your knowledge? Create your first course today!"
+              : `You have ${courses.length} courses with ${totalStudents} total students. Keep up the great work!`
+            }
           </p>
           <Button 
             className="bg-white text-green-600 hover:bg-gray-100"
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => setIsCreateModalOpen(true)}
           >
             <Plus className="h-4 w-4 mr-2" />
             Create New Course
@@ -171,9 +181,8 @@ const TeacherDashboard = () => {
                   <div>
                     <p className="text-sm font-medium text-gray-600">{stat.label}</p>
                     <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
-                    <p className="text-sm text-green-600 font-medium">{stat.change}</p>
                   </div>
-                  <stat.icon className="h-8 w-8 text-green-600" />
+                  <stat.icon className={`h-8 w-8 ${stat.color}`} />
                 </div>
               </CardContent>
             </Card>
@@ -182,15 +191,16 @@ const TeacherDashboard = () => {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="courses" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="courses">My Courses</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="students">Students</TabsTrigger>
           </TabsList>
 
           <TabsContent value="courses" className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold">My Courses</h2>
-              <Button onClick={() => setShowCreateModal(true)}>
+              <Button onClick={() => setIsCreateModalOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Create Course
               </Button>
@@ -200,70 +210,90 @@ const TeacherDashboard = () => {
               <Card>
                 <CardContent className="p-8 text-center">
                   <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No courses yet</h3>
-                  <p className="text-gray-600 mb-4">Create your first course to start teaching</p>
-                  <Button onClick={() => setShowCreateModal(true)}>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No courses created yet</h3>
+                  <p className="text-gray-600 mb-4">Create your first course and start sharing your knowledge!</p>
+                  <Button onClick={() => setIsCreateModalOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Create Your First Course
+                    Create First Course
                   </Button>
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-4">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {courses.map((course) => (
-                  <Card key={course._id}>
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between mb-4">
+                  <Card key={course._id} className="hover:shadow-lg transition-shadow">
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
                         <div className="flex-1">
-                          <div className="flex items-center space-x-3 mb-2">
-                            <h3 className="text-lg font-semibold">{course.title}</h3>
-                            <Badge className={getStatusColor(course.isPublished)}>
-                              {course.isPublished ? 'Published' : 'Draft'}
-                            </Badge>
-                          </div>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-2">
-                            <div>Students: {course.students?.length || 0}</div>
-                            <div>Price: {course.price === 0 ? 'Free' : `$${course.price}`}</div>
-                            <div>Category: {course.category}</div>
-                            <div>Duration: {course.duration}h</div>
-                          </div>
-                          <p className="text-sm text-gray-600 line-clamp-2">{course.description}</p>
+                          <CardTitle className="text-lg line-clamp-2">{course.title}</CardTitle>
+                          <CardDescription>{course.category} • {course.level}</CardDescription>
                         </div>
-                        <div className="flex flex-col space-y-2 ml-4">
-                          <div className="flex space-x-2">
-                            <Button size="sm" variant="outline" onClick={() => handleViewCourse(course._id)}>
-                              <Eye className="h-4 w-4 mr-1" />
-                              View
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={() => handleEditCourse(course._id)}>
-                              <Edit className="h-4 w-4 mr-1" />
-                              Edit
-                            </Button>
-                          </div>
-                          <div className="flex space-x-2">
-                            <Button 
-                              size="sm" 
-                              variant={course.isPublished ? "secondary" : "default"}
-                              onClick={() => handlePublishToggle(course._id)}
-                            >
-                              {course.isPublished ? 'Unpublish' : 'Publish'}
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="text-red-600 hover:text-red-700"
-                              onClick={() => handleDeleteCourse(course._id)}
-                            >
-                              <Trash2 className="h-4 w-4 mr-1" />
-                              Delete
-                            </Button>
-                          </div>
+                        <Badge variant={course.isPublished ? 'default' : 'secondary'}>
+                          {course.isPublished ? 'Published' : 'Draft'}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <p className="text-sm text-gray-600 line-clamp-2">
+                        {course.description}
+                      </p>
+                      
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-500">Students:</span>
+                          <span className="font-medium ml-1">{course.students?.length || 0}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Price:</span>
+                          <span className="font-medium ml-1">
+                            {course.price === 0 ? 'Free' : `$${course.price}`}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Duration:</span>
+                          <span className="font-medium ml-1">{course.duration}h</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Rating:</span>
+                          <span className="font-medium ml-1">{course.rating?.average || 0}/5</span>
                         </div>
                       </div>
-                      <div className="text-xs text-gray-500">
-                        Created: {new Date(course.createdAt).toLocaleDateString()} | 
-                        Last updated: {new Date(course.updatedAt).toLocaleDateString()}
+
+                      <div className="flex space-x-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleViewCourse(course._id)}
+                        >
+                          <Eye className="h-3 w-3 mr-1" />
+                          View
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleEditCourse(course._id)}
+                        >
+                          <Edit className="h-3 w-3 mr-1" />
+                          Edit
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant={course.isPublished ? "default" : "outline"}
+                          onClick={() => handlePublishToggle(course._id)}
+                        >
+                          {course.isPublished ? 'Unpublish' : 'Publish'}
+                        </Button>
                       </div>
+                      
+                      <Button 
+                        size="sm" 
+                        variant="destructive"
+                        className="w-full"
+                        onClick={() => handleDeleteCourse(course._id, course.title)}
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Delete Course
+                      </Button>
                     </CardContent>
                   </Card>
                 ))}
@@ -273,79 +303,119 @@ const TeacherDashboard = () => {
 
           <TabsContent value="analytics" className="space-y-6">
             <h2 className="text-2xl font-bold">Course Analytics</h2>
-            <div className="grid md:grid-cols-2 gap-6">
+            
+            {courses.length === 0 ? (
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <DollarSign className="h-5 w-5 mr-2" />
-                    Revenue Overview
-                  </CardTitle>
-                  <CardDescription>Total earnings from all courses</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-green-600">
-                    ${courses.reduce((total, course) => total + (course.price * (course.students?.length || 0)), 0).toLocaleString()}
-                  </div>
-                  <p className="text-sm text-gray-600 mt-2">
-                    From {courses.reduce((total, course) => total + (course.students?.length || 0), 0)} total enrollments
-                  </p>
-                  <div className="mt-4 space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Published Courses:</span>
-                      <span>{courses.filter(c => c.isPublished).length}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Draft Courses:</span>
-                      <span>{courses.filter(c => !c.isPublished).length}</span>
-                    </div>
-                  </div>
+                <CardContent className="p-8 text-center">
+                  <BarChart3 className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No analytics yet</h3>
+                  <p className="text-gray-600">Create courses to see detailed analytics</p>
                 </CardContent>
               </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <BarChart3 className="h-5 w-5 mr-2" />
-                    Course Performance
-                  </CardTitle>
-                  <CardDescription>Your most popular courses</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {courses.length === 0 ? (
-                      <p className="text-gray-500 text-sm">No courses created yet</p>
-                    ) : (
-                      courses
-                        .sort((a, b) => (b.students?.length || 0) - (a.students?.length || 0))
-                        .slice(0, 5)
-                        .map((course, index) => (
+            ) : (
+              <div className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Course Performance</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {courses.slice(0, 5).map((course) => (
                           <div key={course._id} className="flex justify-between items-center">
                             <div>
-                              <span className="text-sm font-medium">{course.title}</span>
-                              <div className="text-xs text-gray-500">
-                                ${course.price} • {course.category}
-                              </div>
+                              <p className="font-medium truncate">{course.title}</p>
+                              <p className="text-sm text-gray-500">{course.students?.length || 0} students</p>
                             </div>
                             <div className="text-right">
-                              <span className="text-sm font-medium">{course.students?.length || 0}</span>
-                              <div className="text-xs text-gray-500">students</div>
+                              <p className="font-medium">${((course.price || 0) * (course.students?.length || 0)).toFixed(2)}</p>
+                              <p className="text-sm text-gray-500">Revenue</p>
                             </div>
                           </div>
-                        ))
-                    )}
-                  </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Student Engagement</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="flex justify-between">
+                          <span>Total Enrollments</span>
+                          <span className="font-medium">{totalStudents}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Published Courses</span>
+                          <span className="font-medium">{publishedCourses}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Draft Courses</span>
+                          <span className="font-medium">{courses.length - publishedCourses}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Average Rating</span>
+                          <span className="font-medium">{avgRating.toFixed(1)}/5</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="students" className="space-y-6">
+            <h2 className="text-2xl font-bold">Student Overview</h2>
+            
+            {totalStudents === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No students yet</h3>
+                  <p className="text-gray-600">Publish your courses to start getting students</p>
                 </CardContent>
               </Card>
-            </div>
+            ) : (
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Student Distribution by Course</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {courses
+                        .filter(course => (course.students?.length || 0) > 0)
+                        .sort((a, b) => (b.students?.length || 0) - (a.students?.length || 0))
+                        .map((course) => (
+                          <div key={course._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                            <div>
+                              <h4 className="font-medium">{course.title}</h4>
+                              <p className="text-sm text-gray-600">{course.category}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-bold text-blue-600">{course.students?.length || 0}</p>
+                              <p className="text-sm text-gray-500">students</p>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
-      </div>
 
-      <CreateCourseModal 
-        open={showCreateModal} 
-        onClose={() => setShowCreateModal(false)}
-        onCourseCreated={handleCourseCreated}
-      />
+        {/* Create Course Modal */}
+        <CreateCourseModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSubmit={handleCreateCourse}
+        />
+      </div>
     </DashboardLayout>
   );
 };
